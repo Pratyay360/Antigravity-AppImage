@@ -7,21 +7,53 @@ on:
     branches:
       - "main"
 
+name: Build AppImage
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "5 */12 */4 * *"
+  push:
+    branches:
+      - "main"
+
 jobs:
   version:
-    name: Antigravity AppImage
+    name: Kiro AppImage
     runs-on: ubuntu-22.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      METADATA_URL: https://antigravity-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install libfuse2
-        run: sudo apt-get install -y libfuse2 imagemagick   
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq libfuse2 imagemagick
+      - name: Resolve latest Kiro release
+        id: release
+        run: |
+          metadata="$(curl -fsSL "$METADATA_URL")"
+          version="$(jq -r '.productVersion' <<<"$metadata")"
+          package_url="$(jq -r '.url | select(endswith(".tar.gz"))' <<<"$metadata" | head -n 1)"
+
+          if [[ -z "$version" || "$version" == "null" ]]; then
+            echo "Unable to determine currentRelease from metadata" >&2
+            exit 1
+          fi
+
+          if [[ -z "$package_url" || "$package_url" == "null" ]]; then
+            echo "Unable to determine package tarball URL from metadata" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
+
       - name: Build
         id: build
         uses: valicm/appimage-bash@main
         with:
-          version_url: 'https://antigravity-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/latest'
+          version_url: ${{ steps.release.outputs.package_url }}
           version_file: 'resources/app/package.json'
           version_bash: 'jq -r  .version'
           version_icon: 'code.png'
@@ -41,3 +73,4 @@ jobs:
           files: |
             dist/
           repo_token: ${{ secrets.GITHUB_TOKEN }}
+          
