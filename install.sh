@@ -105,7 +105,7 @@ fi
 # --- Download ---
 info "Downloading package..."
 TAR_FILE="$(mktemp /tmp/antigravity.XXXXXX.tar.gz)"
-curl -fsSL "$package_url" -o "$TAR_FILE"
+wget -q "$package_url" -O "$TAR_FILE"
 info "Downloaded to ${TAR_FILE}"
 
 # --- Extract ---
