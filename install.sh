@@ -147,7 +147,7 @@ cat > "$DESKTOP_FILE" <<EOF
 Name=${DISPLAY_NAME}
 Keywords=${DESKTOP_KEYWORDS}
 Exec=${APP_DIR}/antigravity %u
-Icon=${APP_DIR}/resources/app/resources/linux/antigravity.png
+Icon=${APP_DIR}/resources/app/resources/linux/code.png
 Terminal=${DESKTOP_TERMINAL}
 Type=${DESKTOP_TYPE}
 StartupWMClass=${DESKTOP_STARTUP_WM_CLASS}
