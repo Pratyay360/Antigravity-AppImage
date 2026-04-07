@@ -15,7 +15,7 @@ readonly DESKTOP_FILE="${LOCAL_APPS}/${APP_NAME}.desktop"
 readonly METADATA_URL="https://antigravity-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/latest"
 
 # --- Desktop entry metadata ---
-readonly DESKTOP_KEYWORDS="web,development,code,api,text,editor"
+readonly DESKTOP_KEYWORDS="web,development,antigravity,api,text,editor"
 readonly DESKTOP_TERMINAL="false"
 readonly DESKTOP_TYPE="Application"
 readonly DESKTOP_CATEGORIES="Development;"
@@ -36,11 +36,11 @@ fi
 
 # --- Functions ---
 cleanup() {
-    local exit_code=$?
+    local exit_antigravity=$?
     # Clean up temp files if they exist
     [[ -n "${TAR_FILE:-}" && -f "$TAR_FILE" ]] && rm -f "$TAR_FILE"
     [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" ]] && rm -rf "$WORK_DIR"
-    exit $exit_code
+    exit $exit_antigravity
 }
 
 error_exit() {
@@ -122,11 +122,11 @@ else
 fi
 
 # Verify expected structure
-if [[ ! -f "$WORK_DIR/code" ]]; then
-    error_exit "Expected executable 'code' not found in extracted archive"
+if [[ ! -f "$WORK_DIR/antigravity" ]]; then
+    error_exit "Expected executable 'antigravity' not found in extracted archive"
 fi
 
-if [[ ! -f "$WORK_DIR/resources/app/resources/linux/code.png" ]]; then
+if [[ ! -f "$WORK_DIR/resources/app/resources/linux/antigravity.png" ]]; then
     warn "Icon file not found at expected location"
 fi
 
@@ -137,7 +137,7 @@ mv "$WORK_DIR" "$APP_DIR"
 
 # --- Create symlink ---
 mkdir -p "$LOCAL_BIN"
-ln -sf "${APP_DIR}/code" "$BIN_LINK"
+ln -sf "${APP_DIR}/antigravity" "$BIN_LINK"
 info "Binary linked to ${BIN_LINK}"
 
 # --- Create desktop entry ---
@@ -146,8 +146,8 @@ cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Name=${DISPLAY_NAME}
 Keywords=${DESKTOP_KEYWORDS}
-Exec=${APP_DIR}/code %u
-Icon=${APP_DIR}/resources/app/resources/linux/code.png
+Exec=${APP_DIR}/antigravity %u
+Icon=${APP_DIR}/resources/app/resources/linux/antigravity.png
 Terminal=${DESKTOP_TERMINAL}
 Type=${DESKTOP_TYPE}
 StartupWMClass=${DESKTOP_STARTUP_WM_CLASS}
