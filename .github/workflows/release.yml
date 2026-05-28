@@ -7,18 +7,19 @@ on:
     branches:
       - "main"
 env:
-  METADATA_URL: https://antigravity-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/latest
+  METADATA_URL: https://antigravity-ide-auto-updater-974169037036.us-central1.run.app/releases
   APP_UPDATE_NEEDED: true
   APP_SHORT_NAME: Antigravity
   APP_NAME: Antigravity Ide
-  APP_VERSION: jq -r '.productVersion' <<< "$(curl -fsSL "$METADATA_URL")" 
-  
+  APP_VERSION: jq -r '.[0].version' <<< "$(curl -fsSL "$METADATA_URL")"
+  EXECUTION_ID: jq -r '.[0].execution_id' <<< "$(curl -fsSL "$METADATA_URL")"
+  PACKAGE_URL: "https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${APP_VERSION}-${EXECUTION_ID}/linux-x64/Antigravity%20IDE.tar.gz"
 jobs:
   version:
     name: AntiGravity AppImage
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@main
       - name: Install build dependencies
@@ -29,20 +30,11 @@ jobs:
         id: release
         run: |
           metadata="$(curl -fsSL "$METADATA_URL")"
-          version="$(jq -r '.productVersion' <<<"$metadata")"
-          package_url="$(jq -r '.url | select(endswith(".tar.gz"))' <<<"$metadata" | head -n 1)"
-
-          if [[ -z "$version" || "$version" == "null" ]]; then
-            echo "Unable to determine currentRelease from metadata" >&2
-            exit 1
-          fi
-
-          if [[ -z "$package_url" || "$package_url" == "null" ]]; then
-            echo "Unable to determine package tarball URL from metadata" >&2
-            exit 1
-          fi
-
+          version="$(jq -r '.[0].version' <<<"$metadata")"
+          execution_id="$(jq -r '.[0].execution_id' <<<"$metadata")"
+          package_url="$PACKAGE_URL"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "execution_id=$execution_id" >> "$GITHUB_OUTPUT"
           echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
 
       - name: Build
@@ -50,23 +42,22 @@ jobs:
         uses: valicm/appimage-bash@main
         with:
           version_url: ${{ steps.release.outputs.package_url }}
-          version_file: 'resources/app/package.json'
-          version_bash: 'jq -r  .version'
-          version_icon: 'code.png'
+          version_file: "resources/app/package.json"
+          version_bash: "jq -r  .version"
+          version_icon: "code.png"
       - name: Upload artifact
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
         uses: actions/upload-artifact@main
         with:
           name: ${{ env.APP_SHORT_NAME }}.AppImage
-          path: 'dist'
+          path: "dist"
       - name: Release
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: comnoco/create-release-action@v2.0.5
         with:
           title: ${{ env.APP_NAME }} AppImage ${{ env.APP_VERSION }}
           automatic_release_tag: ${{ env.APP_VERSION }}
           prerelease: false
           files: |
             dist/
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          
+          repo_token: ${{ github.token }}
