@@ -24,6 +24,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq libfuse2 imagemagick
       - name: Resolve latest AntiGravity release
+        id: release_info
         run: |
           metadata="$(curl -fsSL "$METADATA_URL")"
           version="$(echo "$metadata" | jq -r '.[0].version')"
@@ -39,9 +40,19 @@ jobs:
       - name: Build
         uses: AppImageCrafters/build-appimage@master
         with:
-          recipe: "./appimage-demo-qt5/AppImageBuilder.yml"
+          recipe: "./AppImageBuilder.yml"
         env:
-          UPDATE_INFO: gh-releases-zsync|AppImageCrafters|appimage-demo-qt5|latest|*x86_64.AppImage.zsync
+          UPDATE_INFO: gh-releases-zsync|Pratyay360|Antigravity-AppImage|latest|*x86_64.AppImage.zsync
+
+      - name: Release
+        if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
+        uses: softprops/action-gh-release@master
+        with:
+          title: antigravity AppImage
+          tag_name: ${{ steps.release_info.outputs.version }}
+          prerelease: false
+          files: |
+            dist/antigravity.AppImage
 
       - name: Upload artifact and release
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
@@ -54,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@master
         with:
           title: antigravity AppImage
-          automatic_release_tag: ${{ env.APP_VERSION }}
+          tag_name: ${{ steps.release_info.outputs.version }}
           prerelease: false
           files: |
             dist/antigravity.AppImage
