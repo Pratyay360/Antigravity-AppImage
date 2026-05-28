@@ -31,8 +31,28 @@ jobs:
           execution_id="$(echo "$metadata" | jq -r '.[0].execution_id')"
           package_url="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${version}-${execution_id}/linux-x64/Antigravity%20IDE.tar.gz"
           wget -O "antigravity.tar.gz" "$package_url"
-          mkdir -p AppDir
-          tar -xzf "antigravity.tar.gz" -C "AppDir"
+          
+          # Setup clean standard directory structure
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/lib/antigravity
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
+          
+          # Extract tarball directly stripping the top-level directory
+          tar -xzf "antigravity.tar.gz" --strip-components=1 -C "AppDir/usr/lib/antigravity"
+          
+          # Copy desktop configuration and icons
+          cp app.desktop AppDir/usr/share/applications/antigravity.desktop
+          cp AppDir/usr/lib/antigravity/resources/app/resources/linux/code.png AppDir/usr/share/icons/hicolor/512x512/apps/code.png
+          cp AppDir/usr/lib/antigravity/resources/app/resources/linux/code.png AppDir/usr/share/icons/hicolor/512x512/apps/antigravity.png
+          
+          # Create standard wrapper launcher
+          cat << 'EOF' > AppDir/usr/bin/antigravity-ide
+#!/bin/bash
+exec "$APPDIR/usr/lib/antigravity/antigravity-ide" "$@"
+EOF
+          chmod +x AppDir/usr/bin/antigravity-ide
+
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "execution_id=$execution_id" >> "$GITHUB_OUTPUT"
           echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
@@ -43,6 +63,7 @@ jobs:
           recipe: "./AppImageBuilder.yml"
         env:
           UPDATE_INFO: gh-releases-zsync|Pratyay360|Antigravity-AppImage|latest|*x86_64.AppImage.zsync
+          APP_VERSION: ${{ steps.release_info.outputs.version }}
 
       - name: Release
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
