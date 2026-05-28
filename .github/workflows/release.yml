@@ -48,9 +48,9 @@ jobs:
           
           # Create standard wrapper launcher
           cat << 'EOF' > AppDir/usr/bin/antigravity-ide
-#!/bin/bash
-exec "$APPDIR/usr/lib/antigravity/antigravity-ide" "$@"
-EOF
+          #!/bin/bash
+          exec "$APPDIR/usr/lib/antigravity/antigravity-ide" "$@"
+          EOF
           chmod +x AppDir/usr/bin/antigravity-ide
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
