@@ -24,34 +24,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq libfuse2 imagemagick
       - name: Resolve latest AntiGravity release
-        id: release
         run: |
           metadata="$(curl -fsSL "$METADATA_URL")"
           version="$(echo "$metadata" | jq -r '.[0].version')"
           execution_id="$(echo "$metadata" | jq -r '.[0].execution_id')"
           package_url="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${version}-${execution_id}/linux-x64/Antigravity%20IDE.tar.gz"
+          wget -o "antigravity.tar.gz" "$package_url"
+          tar -xzf "antigravity.tar.gz" -d "AppDir"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "execution_id=$execution_id" >> "$GITHUB_OUTPUT"
           echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
 
       - name: Build
-        id: build
-        uses: valicm/appimage-bash@main
+        uses: AppImageCrafters/build-appimage@master
         with:
-          version_icon: "code.png"
-      - name: Upload artifact
+          recipe: "./appimage-demo-qt5/AppImageBuilder.yml"
+        env:
+          UPDATE_INFO: gh-releases-zsync|AppImageCrafters|appimage-demo-qt5|latest|*x86_64.AppImage.zsync
+
+      - name: Upload artifact and release
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
         uses: actions/upload-artifact@main
         with:
-          name: ${{ env.APP_SHORT_NAME }}.AppImage
+          name: antigravity.AppImage
           path: "dist"
       - name: Release
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
         uses: softprops/action-gh-release@master
         with:
-          title: ${{ env.APP_NAME }} AppImage ${{ env.APP_VERSION }}
+          title: antigravity AppImage
           automatic_release_tag: ${{ env.APP_VERSION }}
           prerelease: false
           files: |
-            dist/
-          repo_token: ${{ github.token }}
+            dist/antigravity.AppImage
