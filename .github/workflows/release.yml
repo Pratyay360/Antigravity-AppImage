@@ -11,8 +11,8 @@ env:
   APP_UPDATE_NEEDED: true
   APP_SHORT_NAME: Antigravity
   APP_NAME: Antigravity Ide
-  APP_VERSION: jq -r '.[0].version' <<< "$(curl -fsSL "$METADATA_URL")"
-  EXECUTION_ID: jq -r '.[0].execution_id' <<< "$(curl -fsSL "$METADATA_URL")"
+  APP_VERSION: $(curl -fsSL "$METADATA_URL" | jq -r '.[0].version')
+  EXECUTION_ID: $(curl -fsSL "$METADATA_URL" | jq -r '.[0].execution_id')
   PACKAGE_URL: "https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${APP_VERSION}-${EXECUTION_ID}/linux-x64/Antigravity%20IDE.tar.gz"
 jobs:
   version:
