@@ -38,7 +38,6 @@ jobs:
         id: build
         uses: valicm/appimage-bash@main
         with:
-          version: ${{ steps.release.outputs.version }}
           version_icon: "code.png"
       - name: Upload artifact
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
