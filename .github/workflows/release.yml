@@ -33,6 +33,7 @@ jobs:
           version="$(jq -r '.[0].version' <<<"$metadata")"
           execution_id="$(jq -r '.[0].execution_id' <<<"$metadata")"
           package_url="$PACKAGE_URL"
+          wget -o "" "$package_url"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "execution_id=$execution_id" >> "$GITHUB_OUTPUT"
           echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
@@ -41,9 +42,7 @@ jobs:
         id: build
         uses: valicm/appimage-bash@main
         with:
-          version_url: ${{ steps.release.outputs.package_url }}
-          version_file: "resources/app/package.json"
-          version_bash: "jq -r  .version"
+          version: ${{ env.APP_VERSION }}
           version_icon: "code.png"
       - name: Upload artifact
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
@@ -53,7 +52,7 @@ jobs:
           path: "dist"
       - name: Release
         if: ${{ env.APP_UPDATE_NEEDED == 'true' }}
-        uses: comnoco/create-release-action@v2.0.5
+        uses: softprops/action-gh-release@master
         with:
           title: ${{ env.APP_NAME }} AppImage ${{ env.APP_VERSION }}
           automatic_release_tag: ${{ env.APP_VERSION }}

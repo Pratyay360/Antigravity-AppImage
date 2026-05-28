@@ -4,7 +4,7 @@ Type=Application
 Name=AntiGravity
 GenericName=AntiGravity
 Comment=Code Editing. Redefined.
-Exec=antigravity --unity-launch %F
+Exec=antigravity-ide --unity-launch %F
 Icon=code
 Categories=TextEditor;Development;IDE;
 StartupWMClass=Code
@@ -15,5 +15,5 @@ Actions=new-empty-window;
 
 [Desktop Action new-empty-window]
 Name=New Empty Window
-Exec=antigravity --new-window %F
+Exec=antigravity-ide --new-window %F
 Icon=code
