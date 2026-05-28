@@ -11,9 +11,6 @@ env:
   APP_UPDATE_NEEDED: true
   APP_SHORT_NAME: Antigravity
   APP_NAME: Antigravity Ide
-  APP_VERSION: $(curl -fsSL "$METADATA_URL" | jq -r '.[0].version')
-  EXECUTION_ID: $(curl -fsSL "$METADATA_URL" | jq -r '.[0].execution_id')
-  PACKAGE_URL: "https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${APP_VERSION}-${EXECUTION_ID}/linux-x64/Antigravity%20IDE.tar.gz"
 jobs:
   version:
     name: AntiGravity AppImage
@@ -30,10 +27,9 @@ jobs:
         id: release
         run: |
           metadata="$(curl -fsSL "$METADATA_URL")"
-          version="$(jq -r '.[0].version' <<<"$metadata")"
-          execution_id="$(jq -r '.[0].execution_id' <<<"$metadata")"
-          package_url="$PACKAGE_URL"
-          wget -o "" "$package_url"
+          version="$(echo "$metadata" | jq -r '.[0].version')"
+          execution_id="$(echo "$metadata" | jq -r '.[0].execution_id')"
+          package_url="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${version}-${execution_id}/linux-x64/Antigravity%20IDE.tar.gz"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "execution_id=$execution_id" >> "$GITHUB_OUTPUT"
           echo "package_url=$package_url" >> "$GITHUB_OUTPUT"
