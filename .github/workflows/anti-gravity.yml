@@ -66,12 +66,12 @@ jobs:
             AppDir/antigravity.png
 
           echo "==> Creating Custom AppRun..."
-          cat > AppDir/AppRun << 'EOF'
+          cat > custom-AppRun << 'EOF'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "$0")")"
           exec "$HERE/usr/bin/antigravity" "$@"
           EOF
-          chmod +x AppDir/AppRun
+          chmod +x custom-AppRun
 
       - name: Download linuxdeploy
         run: |
@@ -86,7 +86,7 @@ jobs:
             --appdir AppDir \
             --desktop-file AppDir/antigravity.desktop \
             --icon-file AppDir/antigravity.png \
-            --custom-apprun AppDir/AppRun \
+            --custom-apprun custom-AppRun \
             --output appimage
 
           mv AntiGravity-*.AppImage AntiGravity-x86_64.AppImage

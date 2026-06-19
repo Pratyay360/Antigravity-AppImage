@@ -90,12 +90,12 @@ jobs:
           EOF
 
           # AppRun is the AppImage entry point — must not share a name with the real binary
-          cat > AppDir/AppRun << 'APPRUN'
+          cat > custom-AppRun << 'APPRUN'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "$0")")"
           exec "$HERE/antigravity-ide" "$@"
           APPRUN
-          chmod +x AppDir/AppRun
+          chmod +x custom-AppRun
 
       - name: Build AppImage
         if: steps.check.outputs.skip == 'false'
@@ -110,6 +110,7 @@ jobs:
             --appdir AppDir \
             --desktop-file "AppDir/$APP_ID.desktop" \
             --icon-file "AppDir/$APP_ID.png" \
+            --custom-apprun custom-AppRun \
             --output appimage
 
           mv ./*-x86_64.AppImage "$APP_SHORT_NAME-x86_64.AppImage"
