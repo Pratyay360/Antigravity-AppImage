@@ -1,0 +1,109 @@
+name: Build AntiGravity- appimage
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: write
+  actions: write
+  artifact-metadata: write
+
+jobs:
+  build:
+    name: Package AppImage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@main
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq wget imagemagick libfuse2
+
+      - name: Fetch Latest Release and Download
+        id: fetch
+        run: |
+          echo "==> Fetching latest release URL..."
+          TARBALL_URL=$(curl -s https://antigravity-auto-updater-974169037036.us-central1.run.app/api/update/linux-x64/stable/latest | jq -r ".url")
+
+          if [ -z "$TARBALL_URL" ] || [ "$TARBALL_URL" == "null" ]; then
+            echo "Error: Failed to fetch URL from API."
+            exit 1
+          fi
+
+          echo "==> Downloading tarball..."
+          wget -q -O antigravity.tar.gz "$TARBALL_URL"
+
+          # Generate a date-based tag so scheduled cron builds create unique releases
+          echo "release_tag=$(date +'%Y.%m.%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare AppDir Structure
+        run: |
+          echo "==> Creating AppDir directories..."
+          mkdir -p AppDir/usr/bin
+
+          echo "==> Extracting application files..."
+          tar -xzf antigravity.tar.gz -C AppDir/usr/bin/ --strip-components=1
+
+          echo "==> Creating .desktop file..."
+          cat > AppDir/antigravity.desktop << 'EOF'
+          [Desktop Entry]
+          Name=AntiGravity
+          Exec=antigravity %U
+          Icon=antigravity
+          Type=Application
+          Categories=Development;IDE;Utility;
+          StartupNotify=true
+          EOF
+
+          echo "==> Generating Application Icon..."
+          convert -size 256x256 xc:royalblue \
+            -fill white -gravity center -pointsize 48 -annotate 0 "AG" \
+            AppDir/antigravity.png
+
+          echo "==> Creating Custom AppRun..."
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/antigravity" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+      - name: Download linuxdeploy
+        run: |
+          wget -q -O linuxdeploy-x86_64.AppImage "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          chmod +x linuxdeploy-x86_64.AppImage
+
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: |
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --desktop-file AppDir/antigravity.desktop \
+            --icon-file AppDir/antigravity.png \
+            --custom-apprun AppDir/AppRun \
+            --output appimage
+
+          mv AntiGravity-*.AppImage AntiGravity-x86_64.AppImage
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: AntiGravity-Linux-x86_64
+          path: AntiGravity-x86_64.AppImage
+          retention-days: 7
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@master
+        with:
+          tag_name: "nightly-${{ steps.fetch.outputs.release_tag }}"
+          name: "AntiGravity Nightly ${{ steps.fetch.outputs.release_tag }}"
+          prerelease: false
+          files: AntiGravity-x86_64.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,19 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=AntiGravity
+GenericName=AntiGravity
+Comment=Code Editing. Redefined.
+Exec=antigravity-ide --unity-launch %F
+Icon=code
+Categories=TextEditor;Development;IDE;
+StartupWMClass=Code
+StartupNotify=true
+Keywords=antigravity;Google Ide;AntiGravity;
+MimeType=text/plain;inode/directory;application/x-code-workspace;
+Actions=new-empty-window;
+
+[Desktop Action new-empty-window]
+Name=New Empty Window
+Exec=antigravity-ide --new-window %F
+Icon=code

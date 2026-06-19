@@ -1,0 +1,6 @@
+[tools]
+action-validator = "latest"
+actionlint = "latest"
+
+[settings]
+experimental = true

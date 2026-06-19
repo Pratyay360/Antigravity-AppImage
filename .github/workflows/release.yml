@@ -1,0 +1,126 @@
+name: Build AppImage
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "5 */12 * * *"
+  push:
+    branches:
+      - "main"
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  id-token: write
+
+env:
+  METADATA_URL: https://antigravity-ide-auto-updater-974169037036.us-central1.run.app/releases
+  APP_ID: antigravity-ide
+  APP_SHORT_NAME: Antigravity
+  APP_NAME: Antigravity IDE
+
+jobs:
+  build:
+    name: AntiGravity AppImage
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@main
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq libfuse2 imagemagick
+
+      - name: Resolve latest AntiGravity release
+        id: release_info
+        run: |
+          metadata="$(curl -fsSL "$METADATA_URL")"
+          version="$(echo "$metadata" | jq -r '.[0].version')"
+          execution_id="$(echo "$metadata" | jq -r '.[0].execution_id')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "execution_id=$execution_id" >> "$GITHUB_OUTPUT"
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          version="${{ steps.release_info.outputs.version }}"
+          if gh release view "$version" --repo "$GITHUB_REPOSITORY" &>/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Release $version already exists — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download and extract upstream package
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          version="${{ steps.release_info.outputs.version }}"
+          execution_id="${{ steps.release_info.outputs.execution_id }}"
+          package_url="https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/${version}-${execution_id}/linux-x64/Antigravity%20IDE.tar.gz"
+          wget -O antigravity.tar.gz "$package_url"
+          # Create AppDir before extracting into it
+          mkdir -p AppDir
+          tar -xzf antigravity.tar.gz --strip-components=1 -C AppDir/
+
+      - name: Prepare AppDir structure
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          # Use imagemagick to grab and resize an icon from the bundle,
+          # or generate a placeholder if none is found
+          icon_src="$(find AppDir -maxdepth 2 -name '*.png' | head -1)"
+          if [ -n "$icon_src" ]; then
+            convert "$icon_src" -resize 256x256 "AppDir/$APP_ID.png"
+          else
+            convert -size 256x256 xc:royalblue \
+              -fill white -gravity center -pointsize 48 -annotate 0 "AG" \
+              "AppDir/$APP_ID.png"
+          fi
+
+          # .desktop file — required by linuxdeploy
+          cat > "AppDir/$APP_ID.desktop" << EOF
+          [Desktop Entry]
+          Name=$APP_NAME
+          Exec=$APP_ID %F
+          Icon=$APP_ID
+          Type=Application
+          Categories=Development;IDE;TextEditor;
+          StartupNotify=true
+          EOF
+
+          # AppRun is the AppImage entry point — must not share a name with the real binary
+          cat > AppDir/AppRun << 'APPRUN'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/antigravity-ide" "$@"
+          APPRUN
+          chmod +x AppDir/AppRun
+
+      - name: Build AppImage
+        if: steps.check.outputs.skip == 'false'
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          wget -q -O linuxdeploy.AppImage \
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage"
+          chmod +x linuxdeploy.AppImage
+
+          ./linuxdeploy.AppImage \
+            --appdir AppDir \
+            --desktop-file "AppDir/$APP_ID.desktop" \
+            --icon-file "AppDir/$APP_ID.png" \
+            --output appimage
+
+          mv ./*-x86_64.AppImage "$APP_SHORT_NAME-x86_64.AppImage"
+
+      - name: Release
+        if: steps.check.outputs.skip == 'false'
+        uses: softprops/action-gh-release@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: "${{ env.APP_NAME }} ${{ steps.release_info.outputs.version }}"
+          tag_name: ${{ steps.release_info.outputs.version }}
+          prerelease: false
+          files: "${{ env.APP_SHORT_NAME }}-x86_64.AppImage"

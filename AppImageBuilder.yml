@@ -1,0 +1,39 @@
+version: 1
+
+AppDir:
+  path: ./AppDir
+  app_info:
+    id: antigravity
+    name: AntiGravity
+    icon: code
+    version: ${APP_VERSION}
+    exec: usr/bin/antigravity-ide
+    exec_args: $@
+
+  apt:
+    arch: amd64
+    sources:
+      - sourceline: "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse"
+        key_url: "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3b4fe6acc0b21f32"
+      - sourceline: "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse"
+        key_url: "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3b4fe6acc0b21f32"
+    include:
+      - libnss3
+      - libatk1.0-0
+      - libatk-bridge2.0-0
+      - libgdk-pixbuf2.0-0
+      - libgtk-3-0
+      - libgbm1
+      - libasound2
+      - libcups2
+    exclude:
+      - libc6
+      - libstdc++6
+      - libgcc1
+      - libgcc-s1
+      - zlib1g
+
+AppImage:
+  update-information: ${UPDATE_INFO}
+  sign-key: None
+  arch: x86_64
